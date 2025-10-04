@@ -1,6 +1,6 @@
 # Loan Approval Prediction
 
-ML system for predicting loan approval. Project checkpoint for data mining course.
+ML system for predicting loan approval.
 
 ## Tech Stack
 
