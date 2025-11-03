@@ -4,6 +4,8 @@ ML system for predicting loan approval.
 
 ## Tech Stack
 
+- JAX, Optax Linen
+- Custom Multi Layer Perceptron, Focal Loss, Weighted Binary Cross Entropy Loss
 - Python 3.10
 - scikit-learn, LightGBM, imbalanced-learn
 - pandas, numpy, matplotlib, seaborn
