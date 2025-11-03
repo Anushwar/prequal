@@ -38,3 +38,6 @@ build/
 
 # Ruff
 .ruff_cache/
+
+# Ignore CatBoost training logs
+catboost_info/
