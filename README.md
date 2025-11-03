@@ -30,6 +30,14 @@ jupyter notebook notebooks/eda.ipynb
 python loan_prediction_system.py
 ```
 
+```bash
+python loan_prediction_system_catboost.py
+```
+
+```bash
+python loan_prediction_system_ensemble.py
+```
+
 Outputs:
 - `models/loan_system.pkl` - Trained model
 - Performance metrics printed
@@ -79,16 +87,16 @@ prequal/
 ├── models/
 │   └── loan_system.pkl        # Trained model (generated)
 ├── loan_prediction_system.py  # Main ML system
+├── loan_prediction_system_catboost.py # CatBoost ML system
+├── loan_prediction_system_ensemble.py # Ensemble ML system
 ├── doc.md                     # Project documentation
 └── requirements.txt
+
 ```
 
 ## Performance
 
-- ROC-AUC: 95.0%
-- Cross-Validation: 98.3%
-- Accuracy: 95.2%
-- F1-Score: 81.2%
+<img width="999" height="370" alt="Screenshot 2025-11-02 at 7 30 20 PM" src="https://github.com/user-attachments/assets/c869e629-7262-4864-921a-28a9c99c3cf5" />
 ## Features
 
 - Automated feature engineering (8+ features)
