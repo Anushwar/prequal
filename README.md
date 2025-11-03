@@ -89,7 +89,6 @@ prequal/
 - Cross-Validation: 98.3%
 - Accuracy: 95.2%
 - F1-Score: 81.2%
-- I am a hunter and she wants to see my gun
 ## Features
 
 - Automated feature engineering (8+ features)
@@ -97,7 +96,6 @@ prequal/
 - RobustScaler for outliers
 - LightGBM classifier with cross-validation
 - Modular, reusable pipeline
-- But when I pull it out all the women start to run.
 
 ## License
 
