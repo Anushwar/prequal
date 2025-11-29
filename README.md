@@ -1,14 +1,22 @@
 # Loan Approval Prediction
 
-ML system for predicting loan approval.
+Machine learning system for predicting loan approval using traditional ML (LightGBM, CatBoost, XGBoost) and custom neural networks (JAX/Flax).
+
+## Features
+
+- **Multiple Model Implementations**: LightGBM, CatBoost, Ensemble (stacking), and custom neural networks
+- **Advanced Feature Engineering**: Automated creation of financial ratios, log/sqrt transformations, and interaction terms
+- **Class Imbalance Handling**: SMOTE oversampling and weighted loss functions
+- **Neural Network Architectures**: 3 sizes (small/medium/large) with Leaky ReLU, Focal Loss, and Weighted BCE
+- **Robust Preprocessing**: RobustScaler for outlier handling, optional PCA for dimensionality reduction
+- **Cross-Validation**: 5-fold stratified cross-validation for reliable performance estimates
 
 ## Tech Stack
 
-- JAX, Optax Linen
-- Custom Multi Layer Perceptron, Focal Loss, Weighted Binary Cross Entropy Loss
-- Python 3.10
-- scikit-learn, LightGBM, imbalanced-learn
-- pandas, numpy, matplotlib, seaborn
+- **ML**: LightGBM, XGBoost, CatBoost, scikit-learn, imbalanced-learn
+- **Deep Learning**: JAX, Flax, Optax
+- **Data**: pandas, numpy, scipy
+- **Dev Tools**: black, ruff
 
 ## Setup
 
@@ -20,92 +28,42 @@ pip install -r requirements.txt
 
 ## Usage
 
-### 1. Exploratory Data Analysis
-
+**Run EDA & Preprocessing:**
 ```bash
-jupyter notebook notebooks/eda.ipynb
+python -m src.eda
 ```
 
-### 2. Train Model
-
+**Train Traditional ML Models:**
 ```bash
-python loan_prediction_system.py
+python -m src.models.lightgbm_model
+python -m src.models.catboost_model
+python -m src.models.ensemble_model
 ```
 
+**Train Neural Networks:**
 ```bash
-python loan_prediction_system_catboost.py
+python -m src.training.train_nn_small
+python -m src.training.train_nn_medium
+python -m src.training.train_nn_large
 ```
 
-```bash
-python loan_prediction_system_ensemble.py
-```
-
-Outputs:
-- `models/loan_system.pkl` - Trained model
-- Performance metrics printed
-
-### 3. Use Trained Model
-
+**Use Trained Model:**
 ```python
-from loan_prediction_system import LoanPredictionSystem
+from src.models.lightgbm_model import LoanPredictionSystem
 
-system = LoanPredictionSystem.load('models/loan_system.pkl')
+system = LoanPredictionSystem.load('models/lightgbm_system.pkl')
 system.predict('data/test.csv', 'predictions.csv')
 ```
 
 ## Development
 
-### Code Formatting & Linting
-
-Before making code changes, ensure code quality:
-
 ```bash
-# Format all Python files
-black .
+# Format code
+black src/
 
-# Lint and auto-fix issues
-ruff check . --fix
-
-# Verify formatting
-black --check .
-ruff check .
+# Lint
+ruff check src/ --fix
 ```
-
-Or for specific files:
-```bash
-black <file>.py
-ruff check <file>.py --fix
-```
-
-## Project Structure
-
-```
-prequal/
-├── notebooks/
-│   └── eda.ipynb              # Exploratory analysis
-├── data/
-│   ├── train.csv              # Training data
-│   └── test.csv               # Test data
-├── models/
-│   └── loan_system.pkl        # Trained model (generated)
-├── loan_prediction_system.py  # Main ML system
-├── loan_prediction_system_catboost.py # CatBoost ML system
-├── loan_prediction_system_ensemble.py # Ensemble ML system
-├── doc.md                     # Project documentation
-└── requirements.txt
-
-```
-
-## Performance
-
-<img width="999" height="370" alt="Screenshot 2025-11-02 at 7 30 20 PM" src="https://github.com/user-attachments/assets/c869e629-7262-4864-921a-28a9c99c3cf5" />
-## Features
-
-- Automated feature engineering (8+ features)
-- Handles class imbalance with SMOTE
-- RobustScaler for outliers
-- LightGBM classifier with cross-validation
-- Modular, reusable pipeline
 
 ## License
 

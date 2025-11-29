@@ -7,15 +7,16 @@ with full EDA-driven feature engineering and 5-Fold ROC-AUC evaluation.
 import os
 import pickle
 import warnings
+
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import StratifiedKFold, train_test_split
-from sklearn.preprocessing import LabelEncoder, RobustScaler
-from sklearn.metrics import classification_report, roc_auc_score, f1_score
+from catboost import CatBoostClassifier
 from imblearn.over_sampling import SMOTE
 from lightgbm import LGBMClassifier
+from sklearn.metrics import classification_report, f1_score, roc_auc_score
+from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.preprocessing import LabelEncoder, RobustScaler
 from xgboost import XGBClassifier
-from catboost import CatBoostClassifier
 
 warnings.filterwarnings("ignore")
 
@@ -44,32 +45,45 @@ class LoanPredictionEnsemble:
 
         # Handle missing values
         if "person_emp_length" in df.columns:
-            df["person_emp_length"].fillna(df["person_emp_length"].median(), inplace=True)
+            df["person_emp_length"].fillna(
+                df["person_emp_length"].median(), inplace=True
+            )
 
         # Financial ratios and interaction terms
         df["debt_to_income_ratio"] = df["loan_amnt"] / (df["person_income"] + 1)
         df["interest_to_income_ratio"] = df["loan_int_rate"] / (df["person_income"] + 1)
         df["eff_cost_borrowing"] = df["loan_amnt"] * df["loan_int_rate"]
-        df["cred_hist_x_int_rate"] = df["cb_person_cred_hist_length"] * df["loan_int_rate"]
-        df["cred_hist_x_income"] = df["cb_person_cred_hist_length"] * df["person_income"]
+        df["cred_hist_x_int_rate"] = (
+            df["cb_person_cred_hist_length"] * df["loan_int_rate"]
+        )
+        df["cred_hist_x_income"] = (
+            df["cb_person_cred_hist_length"] * df["person_income"]
+        )
 
         # Log transformations
         for col in [
-            "person_income", "interest_to_income_ratio",
-            "debt_to_income_ratio", "eff_cost_borrowing", "cred_hist_x_income"
+            "person_income",
+            "interest_to_income_ratio",
+            "debt_to_income_ratio",
+            "eff_cost_borrowing",
+            "cred_hist_x_income",
         ]:
             df[f"{col}_log"] = np.log1p(df[col])
 
         # Square root transformations
         for col in [
-            "person_emp_length", "loan_amnt",
-            "cb_person_cred_hist_length", "cred_hist_x_int_rate"
+            "person_emp_length",
+            "loan_amnt",
+            "cb_person_cred_hist_length",
+            "cred_hist_x_int_rate",
         ]:
             df[f"{col}_sqrt"] = np.sqrt(df[col])
 
         # Binary indicators
         df["employment_stable"] = (df["person_emp_length"] >= 5).astype(int)
-        df["high_interest"] = (df["loan_int_rate"] > df["loan_int_rate"].median()).astype(int)
+        df["high_interest"] = (
+            df["loan_int_rate"] > df["loan_int_rate"].median()
+        ).astype(int)
 
         return df
 
@@ -77,8 +91,10 @@ class LoanPredictionEnsemble:
         """Encode categorical variables using label and one-hot encoding"""
         df = df.copy()
         categorical_cols = [
-            "person_home_ownership", "loan_intent",
-            "loan_grade", "cb_person_default_on_file"
+            "person_home_ownership",
+            "loan_intent",
+            "loan_grade",
+            "cb_person_default_on_file",
         ]
 
         for col in categorical_cols:
@@ -147,18 +163,28 @@ class LoanPredictionEnsemble:
         # Base models
         base_models = {
             "lgbm": LGBMClassifier(
-                n_estimators=400, learning_rate=0.05, max_depth=7,
-                subsample=0.8, random_state=self.random_state
+                n_estimators=400,
+                learning_rate=0.05,
+                max_depth=7,
+                subsample=0.8,
+                random_state=self.random_state,
             ),
             "xgb": XGBClassifier(
-                n_estimators=400, learning_rate=0.05, max_depth=6,
-                subsample=0.8, colsample_bytree=0.8,
-                eval_metric="logloss", random_state=self.random_state
+                n_estimators=400,
+                learning_rate=0.05,
+                max_depth=6,
+                subsample=0.8,
+                colsample_bytree=0.8,
+                eval_metric="logloss",
+                random_state=self.random_state,
             ),
             "cat": CatBoostClassifier(
-                iterations=400, learning_rate=0.05, depth=7,
-                verbose=False, random_seed=self.random_state
-            )
+                iterations=400,
+                learning_rate=0.05,
+                depth=7,
+                verbose=False,
+                random_seed=self.random_state,
+            ),
         }
 
         # 5-Fold training for base out-of-fold predictions
@@ -178,8 +204,11 @@ class LoanPredictionEnsemble:
 
         # Meta-learner using CatBoost
         self.meta_model = CatBoostClassifier(
-            iterations=400, learning_rate=0.05, depth=5,
-            verbose=False, random_seed=self.random_state
+            iterations=400,
+            learning_rate=0.05,
+            depth=5,
+            verbose=False,
+            random_seed=self.random_state,
         )
         self.meta_model.fit(oof_preds, y_train)
         meta_val = self.meta_model.predict_proba(val_preds)[:, 1]
@@ -192,15 +221,22 @@ class LoanPredictionEnsemble:
         f1_best = np.max(f1s)
 
         print("\nValidation Performance:")
-        print(classification_report(y_val, (meta_val > best_thr).astype(int),
-              target_names=["Denied", "Approved"]))
+        print(
+            classification_report(
+                y_val,
+                (meta_val > best_thr).astype(int),
+                target_names=["Denied", "Approved"],
+            )
+        )
         print(f"ROC-AUC: {roc_auc:.4f}")
         print(f"Optimal F1 Threshold: {best_thr:.3f}, F1={f1_best:.4f}")
 
         # Full 5-Fold ROC-AUC evaluation
         print("\nCross-Validation (5-Fold Ensemble ROC-AUC):")
         cv_aucs = []
-        skf_outer = StratifiedKFold(n_splits=5, shuffle=True, random_state=self.random_state)
+        skf_outer = StratifiedKFold(
+            n_splits=5, shuffle=True, random_state=self.random_state
+        )
         for fold, (tr_idx, va_idx) in enumerate(skf_outer.split(X_train, y_train), 1):
             X_tr, X_va = X_train[tr_idx], X_train[va_idx]
             y_tr, y_va = y_train.iloc[tr_idx], y_train.iloc[va_idx]
@@ -210,12 +246,15 @@ class LoanPredictionEnsemble:
                 model.fit(X_tr, y_tr)
                 fold_preds[:, i2] = model.predict_proba(X_va)[:, 1]
 
-            meta_train = np.column_stack([
-                m.predict_proba(X_tr)[:, 1] for m in base_models.values()
-            ])
+            meta_train = np.column_stack(
+                [m.predict_proba(X_tr)[:, 1] for m in base_models.values()]
+            )
             meta_model_fold = CatBoostClassifier(
-                iterations=400, learning_rate=0.05, depth=5,
-                verbose=False, random_seed=self.random_state
+                iterations=400,
+                learning_rate=0.05,
+                depth=5,
+                verbose=False,
+                random_seed=self.random_state,
             )
             meta_model_fold.fit(meta_train, y_tr)
             meta_val_pred = meta_model_fold.predict_proba(fold_preds)[:, 1]
@@ -223,22 +262,30 @@ class LoanPredictionEnsemble:
             cv_aucs.append(auc)
             print(f"  Fold {fold} ROC-AUC: {auc:.4f}")
 
-        print(f"Mean 5-Fold Ensemble ROC-AUC: {np.mean(cv_aucs):.4f} (+/- {np.std(cv_aucs)*2:.4f})")
+        print(
+            f"Mean 5-Fold Ensemble ROC-AUC: {np.mean(cv_aucs):.4f} "
+            f"(+/- {np.std(cv_aucs)*2:.4f})"
+        )
 
         # Save trained system
         os.makedirs(MODEL_DIR, exist_ok=True)
         with open(MODEL_DIR + "loan_ensemble.pkl", "wb") as f:
-            pickle.dump({
-                "models": self.models,
-                "meta": self.meta_model,
-                "scaler": self.scaler,
-                "feature_columns": self.feature_columns
-            }, f)
+            pickle.dump(
+                {
+                    "models": self.models,
+                    "meta": self.meta_model,
+                    "scaler": self.scaler,
+                    "feature_columns": self.feature_columns,
+                },
+                f,
+            )
         print(f"\nSystem saved to {MODEL_DIR}loan_ensemble.pkl")
 
         return {"roc_auc": roc_auc, "f1": f1_best, "cv_roc_auc": np.mean(cv_aucs)}
 
-    def predict(self, test_path=DATA_DIR + "test.csv", output_path=DATA_DIR + "submission.csv"):
+    def predict(
+        self, test_path=DATA_DIR + "test.csv", output_path=DATA_DIR + "submission.csv"
+    ):
         """Generate ensemble predictions on test data"""
         print("=" * 70)
         print("GENERATING ENSEMBLE PREDICTIONS")
@@ -248,13 +295,14 @@ class LoanPredictionEnsemble:
         X = self.prepare_features(df, fit=False)
         X = self.scaler.transform(X)
 
-        base_preds = np.column_stack([m.predict_proba(X)[:, 1] for m in self.models.values()])
+        base_preds = np.column_stack(
+            [m.predict_proba(X)[:, 1] for m in self.models.values()]
+        )
         final = self.meta_model.predict_proba(base_preds)[:, 1]
 
-        submission = pd.DataFrame({
-            "id": df["id"],
-            "loan_status": (final > 0.5).astype(int)
-        })
+        submission = pd.DataFrame(
+            {"id": df["id"], "loan_status": (final > 0.5).astype(int)}
+        )
         submission.to_csv(output_path, index=False)
         print(f"Predictions saved to {output_path}")
         return submission
@@ -265,8 +313,10 @@ def main():
     ens = LoanPredictionEnsemble(random_state=42)
     results = ens.train(DATA_DIR + "train.csv", use_smote=True)
     ens.predict(DATA_DIR + "test.csv", DATA_DIR + "submission.csv")
-    print(f"\n✓ System training complete! ROC-AUC={results['roc_auc']:.4f}, "
-          f"F1={results['f1']:.4f}, CV-ROC-AUC={results['cv_roc_auc']:.4f}")
+    print(
+        f"\n✓ System training complete! ROC-AUC={results['roc_auc']:.4f}, "
+        f"F1={results['f1']:.4f}, CV-ROC-AUC={results['cv_roc_auc']:.4f}"
+    )
 
 
 if __name__ == "__main__":
