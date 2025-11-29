@@ -18,7 +18,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import RobustScaler
 from tqdm import trange
 
-from src.config import IMAGES_DIR, NN_PARAMS_PKL, TRAIN_PROCESSED_CSV
+from src.config import IMAGES_NN_DIR, NN_PARAMS_PKL, TRAIN_PROCESSED_CSV
 from src.models.nn_small import ANN_64_32_16 as LoanApprovalMLP
 
 
@@ -270,7 +270,7 @@ def main():
     plt.grid(True)
 
     plt.tight_layout()
-    plot_path = IMAGES_DIR / "nn_small_training.png"
+    plot_path = IMAGES_NN_DIR / "nn_small_training.png"
     plt.savefig(plot_path)
     print(f"Training plot saved as '{plot_path}'")
 

@@ -18,7 +18,7 @@ from sklearn.model_selection import StratifiedKFold, train_test_split
 from sklearn.preprocessing import RobustScaler
 from tqdm import trange
 
-from src.config import NN_PARAMS_PKL, TRAIN_PROCESSED_CSV
+from src.config import IMAGES_NN_DIR, NN_PARAMS_PKL, TRAIN_PROCESSED_CSV
 from src.models.nn_medium import ANN_128_64_32_16 as LoanApprovalMLP
 
 
