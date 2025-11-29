@@ -1,8 +1,8 @@
-import jax.numpy as jnp
 from flax import linen as nn
 
+
 class ANN_128_64_32_16(nn.Module):
-    
+
     @nn.compact
     def __call__(self, x):
         x = nn.Dense(128)(x)
@@ -17,13 +17,14 @@ class ANN_128_64_32_16(nn.Module):
         x = nn.sigmoid(x)
         return x.squeeze(-1)
 
+
 class ANN_128_128_64_32(nn.Module):
-    
+
     @nn.compact
     def __call__(self, x):
         x = nn.Dense(128)(x)
         x = nn.leaky_relu(x, negative_slope=0.01)
-        
+
         x = nn.Dense(128)(x)
         x = nn.leaky_relu(x, negative_slope=0.01)
 

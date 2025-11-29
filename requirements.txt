@@ -7,8 +7,16 @@ jupyter==1.0.0
 ipykernel==6.29.0
 xgboost==2.0.3
 lightgbm==4.3.0
+catboost==1.2.2
 imbalanced-learn==0.12.0
 scipy==1.11.4
+
+# Neural Network dependencies
+jax==0.4.23
+jaxlib==0.4.23
+flax==0.7.5
+optax==0.1.9
+tqdm==4.66.1
 
 # Development tools
 black==24.10.0
