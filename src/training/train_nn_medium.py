@@ -92,6 +92,26 @@ def train_with_cv(X_train, y_train, X_test, y_test, n_splits=5):
 def load_and_prepare_data(train_path, use_smote=True):
     train_df = pd.read_csv(train_path)
 
+    # Drop person_age due to multicollinearity
+    if "person_age" in train_df.columns:
+        train_df.drop(columns=["person_age"], inplace=True)
+
+    # Feature Engineering
+    train_df["interest_to_income_ratio"] = train_df["loan_int_rate"] / train_df["person_income"]
+    train_df["debt_to_income_ratio"] = train_df["loan_amnt"] / train_df["person_income"]
+
+    # Feature Transformations
+    for col in ["person_income", "interest_to_income_ratio", "debt_to_income_ratio"]:
+        train_df[f"{col}_log"] = np.log1p(train_df[col])
+
+    for col in ["person_emp_length", "loan_amnt", "cb_person_cred_hist_length"]:
+        train_df[f"{col}_sqrt"] = np.sqrt(train_df[col])
+
+    # One-hot encoding for categorical variables
+    categorical_cols = ["person_home_ownership", "loan_intent", "loan_grade", "cb_person_default_on_file"]
+    train_ohe = pd.get_dummies(train_df[categorical_cols], drop_first=True, dtype="uint8")
+    train_df[train_ohe.columns] = train_ohe
+
     numerical_cols = [
         "person_income_log",
         "person_emp_length_sqrt",
@@ -103,23 +123,7 @@ def load_and_prepare_data(train_path, use_smote=True):
         "debt_to_income_ratio_log",
     ]
 
-    ohe_cols = [
-        "person_home_ownership_OTHER",
-        "person_home_ownership_OWN",
-        "person_home_ownership_RENT",
-        "loan_intent_HOMEIMPROVEMENT",
-        "loan_intent_MEDICAL",
-        "loan_intent_EDUCATION",
-        "loan_intent_PERSONAL",
-        "loan_intent_VENTURE",
-        "loan_grade_B",
-        "loan_grade_C",
-        "loan_grade_D",
-        "loan_grade_E",
-        "loan_grade_F",
-        "loan_grade_G",
-        "cb_person_default_on_file_Y",
-    ]
+    ohe_cols = list(train_ohe.columns)
 
     feature_cols = numerical_cols + ohe_cols
 
@@ -136,16 +140,9 @@ def load_and_prepare_data(train_path, use_smote=True):
 
     if use_smote:
         print("\nApplying SMOTE...")
-        print(f"Before SMOTE - Training samples: {len(X_train)}")
-        print(f"  Denied (0): {(y_train == 0).sum()}")
-        print(f"  Approved (1): {(y_train == 1).sum()}")
-
-        smote = SMOTE(random_state=42, k_neighbors=5)
+        smote = SMOTE(random_state=42, sampling_strategy=0.5)
         X_train, y_train = smote.fit_resample(X_train, y_train)
-
-        print(f"After SMOTE - Training samples: {len(X_train)}")
-        print(f"  Denied (0): {(y_train == 0).sum()}")
-        print(f"  Approved (1): {(y_train == 1).sum()}\n")
+        print(f"  Resampled to {X_train.shape[0]} samples")
 
     print(f"\n{'='*70}")
     print("Data Loading Summary")
@@ -157,24 +154,6 @@ def load_and_prepare_data(train_path, use_smote=True):
     print("\nClass distribution in training:")
     print(f"  Denied (0): {(y_train == 0).sum()} ({(y_train == 0).mean()*100:.1f}%)")
     print(f"  Approved (1): {(y_train == 1).sum()} ({(y_train == 1).mean()*100:.1f}%)")
-    print(f"{'='*70}\n")
-
-    # === ADD THIS DEBUGGING ===
-    print(f"\n{'='*70}")
-    print("Data Quality Check")
-    print(f"{'='*70}")
-    print(f"X_train - NaN: {np.isnan(X_train).sum()}, Inf: {np.isinf(X_train).sum()}")
-    print(f"X_test - NaN: {np.isnan(X_test).sum()}, Inf: {np.isinf(X_test).sum()}")
-    print(f"X_train min: {np.nanmin(X_train):.6f}, max: {np.nanmax(X_train):.6f}")
-    print(f"X_test min: {np.nanmin(X_test):.6f}, max: {np.nanmax(X_test):.6f}")
-
-    # Check each feature column
-    for i, col in enumerate(feature_cols):
-        nan_count = np.isnan(X_train[:, i]).sum()
-        inf_count = np.isinf(X_train[:, i]).sum()
-        if nan_count > 0 or inf_count > 0:
-            print(f"  PROBLEM in {col}: NaN={nan_count}, Inf={inf_count}")
-
     print(f"{'='*70}\n")
 
     return X_train, y_train, X_test, y_test

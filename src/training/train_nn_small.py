@@ -32,6 +32,26 @@ def save_params(params, filename=None):
 def load_and_prepare_data(train_path):
     train_df = pd.read_csv(train_path)
 
+    # Drop person_age due to multicollinearity
+    if "person_age" in train_df.columns:
+        train_df.drop(columns=["person_age"], inplace=True)
+
+    # Feature Engineering
+    train_df["interest_to_income_ratio"] = train_df["loan_int_rate"] / train_df["person_income"]
+    train_df["debt_to_income_ratio"] = train_df["loan_amnt"] / train_df["person_income"]
+
+    # Feature Transformations
+    for col in ["person_income", "interest_to_income_ratio", "debt_to_income_ratio"]:
+        train_df[f"{col}_log"] = np.log1p(train_df[col])
+
+    for col in ["person_emp_length", "loan_amnt", "cb_person_cred_hist_length"]:
+        train_df[f"{col}_sqrt"] = np.sqrt(train_df[col])
+
+    # One-hot encoding for categorical variables
+    categorical_cols = ["person_home_ownership", "loan_intent", "loan_grade", "cb_person_default_on_file"]
+    train_ohe = pd.get_dummies(train_df[categorical_cols], drop_first=True, dtype="uint8")
+    train_df[train_ohe.columns] = train_ohe
+
     numerical_cols = [
         "person_income_log",
         "person_emp_length_sqrt",
@@ -43,23 +63,7 @@ def load_and_prepare_data(train_path):
         "debt_to_income_ratio_log",
     ]
 
-    ohe_cols = [
-        "person_home_ownership_OTHER",
-        "person_home_ownership_OWN",
-        "person_home_ownership_RENT",
-        "loan_intent_HOMEIMPROVEMENT",
-        "loan_intent_MEDICAL",
-        "loan_intent_EDUCATION",
-        "loan_intent_PERSONAL",
-        "loan_intent_VENTURE",
-        "loan_grade_B",
-        "loan_grade_C",
-        "loan_grade_D",
-        "loan_grade_E",
-        "loan_grade_F",
-        "loan_grade_G",
-        "cb_person_default_on_file_Y",
-    ]
+    ohe_cols = list(train_ohe.columns)
 
     feature_cols = numerical_cols + ohe_cols
 

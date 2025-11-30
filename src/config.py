@@ -19,11 +19,11 @@ IMAGES_NN_DIR = IMAGES_DIR / "neural_networks"
 IMAGES_ML_DIR = IMAGES_DIR / "traditional_ml"
 IMAGES_EDA_DIR = IMAGES_DIR / "eda"
 
-# Data files (processed = raw in this project)
+# Data files
 TRAIN_CSV = DATA_DIR / "train.csv"
 TEST_CSV = DATA_DIR / "test.csv"
-TRAIN_PROCESSED_CSV = DATA_DIR / "train.csv"  # Same as train.csv
-TEST_PROCESSED_CSV = DATA_DIR / "test.csv"  # Same as test.csv
+TRAIN_PROCESSED_CSV = DATA_DIR / "train_processed.csv"  # Preprocessed by EDA
+TEST_PROCESSED_CSV = DATA_DIR / "test_processed.csv"  # Preprocessed by EDA
 SUBMISSION_CSV = DATA_DIR / "submission.csv"
 
 # Model files
